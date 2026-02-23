@@ -8,7 +8,7 @@ export default function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Admin navigation" className="space-y-2 reveal-stagger">
+    <nav aria-label="Navegacion de administracion" className="space-y-2 reveal-stagger">
       {adminMenu.map((item) => {
         const isActive = pathname === item.href;
 

@@ -5,14 +5,14 @@ import StatusPill from "@/components/ui/status-pill";
 export default function AdminAnalyticsPage() {
   return (
     <SectionShell
-      title="Analytics"
-      subtitle="Assessment trend visibility and humanitarian response metrics."
+      title="Analitica"
+      subtitle="Visibilidad de tendencias de evaluacion y metricas de respuesta humanitaria."
     >
       <section className="grid gap-4 lg:grid-cols-2">
         <article className="panel p-5">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-ink">Submissions by week</p>
-            <StatusPill tone="blue">Rolling 8w</StatusPill>
+            <p className="text-sm font-semibold text-ink">Solicitudes por semana</p>
+            <StatusPill tone="blue">ultimas 8 sem</StatusPill>
           </div>
           <MiniBars bars={[22, 34, 41, 45, 52, 57, 61, 70]} />
         </article>
@@ -20,9 +20,9 @@ export default function AdminAnalyticsPage() {
         <article className="panel p-5">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-semibold text-ink">
-              Priority score distribution
+              Distribucion de puntajes de prioridad
             </p>
-            <StatusPill tone="pink">High-risk focus</StatusPill>
+            <StatusPill tone="pink">foco de alto riesgo</StatusPill>
           </div>
           <div className="mt-4 rounded-xl border border-line bg-bg-elev/45 p-4">
             <div className="reveal-stagger space-y-3">

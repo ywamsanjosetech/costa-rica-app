@@ -4,19 +4,19 @@ import StatusPill from "@/components/ui/status-pill";
 const rows = [
   {
     applicant: "Maria Gutierrez",
-    status: "Pending",
+    status: "Pendiente",
     score: "82",
     submittedAt: "2026-02-19",
   },
   {
     applicant: "Andres Mena",
-    status: "Under Review",
+    status: "En revision",
     score: "67",
     submittedAt: "2026-02-18",
   },
   {
     applicant: "Rosa Nunez",
-    status: "Approved",
+    status: "Aprobado",
     score: "91",
     submittedAt: "2026-02-17",
   },
@@ -24,25 +24,25 @@ const rows = [
 
 export default function AdminSubmissionsPage() {
   const getTone = (status) => {
-    if (status === "Approved") return "success";
-    if (status === "Pending") return "pink";
-    if (status === "Under Review") return "blue";
+    if (status === "Aprobado") return "success";
+    if (status === "Pendiente") return "pink";
+    if (status === "En revision") return "blue";
     return "neutral";
   };
 
   return (
     <SectionShell
-      title="Submissions"
-      subtitle="Queue for applicant review, scoring, and housing decision workflow."
+      title="Solicitudes"
+      subtitle="Cola para revision de solicitantes, puntaje y flujo de decision de vivienda."
     >
       <section className="panel overflow-x-auto p-2">
         <table className="min-w-full text-left text-sm">
           <thead>
             <tr className="border-b border-line text-xs uppercase tracking-[0.09em] text-ink-soft">
-              <th className="px-3 py-3">Applicant</th>
-              <th className="px-3 py-3">Status</th>
-              <th className="px-3 py-3">Score</th>
-              <th className="px-3 py-3">Submitted</th>
+              <th className="px-3 py-3">Solicitante</th>
+              <th className="px-3 py-3">Estado</th>
+              <th className="px-3 py-3">Puntaje</th>
+              <th className="px-3 py-3">Enviado</th>
             </tr>
           </thead>
           <tbody>

@@ -12,16 +12,17 @@ export default function AdminShell({ children }) {
               YWAM San Jose CR
             </p>
             <h1 className="mt-2 text-2xl font-semibold text-ink">
-              Housing Admin
+              Administracion de Vivienda
             </h1>
             <p className="mt-2 text-sm text-ink-soft">
-              Coordinated review and prioritization for humanitarian housing
-              response.
+              Revision y priorizacion coordinada para la respuesta humanitaria
+              de vivienda.
             </p>
           </div>
           <AdminNav />
           <div className="rounded-xl border border-line bg-bg-base/70 p-3 text-xs text-ink-soft">
-            Auth layer pending. Route is scaffolded as protected infrastructure.
+            Capa de autenticacion pendiente. Ruta preparada como infraestructura
+            protegida.
           </div>
         </aside>
 
@@ -29,16 +30,16 @@ export default function AdminShell({ children }) {
           <header className="panel flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
               <p className="text-xs uppercase tracking-[0.12em] text-ink-soft">
-                Internal Operations
+                Operaciones internas
               </p>
               <p className="text-xl font-semibold text-ink">
-                YWAM Housing Assessment
+                Evaluacion de Vivienda YWAM
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <StatusPill tone="success">System online</StatusPill>
+              <StatusPill tone="success">Sistema en linea</StatusPill>
               <Link href="/apply/housing-relief-2026" className="btn-secondary px-4 py-2 text-sm">
-                View Public Form
+                Ver formulario publico
               </Link>
             </div>
           </header>

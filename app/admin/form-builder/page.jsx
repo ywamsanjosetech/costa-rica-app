@@ -4,20 +4,20 @@ import StatusPill from "@/components/ui/status-pill";
 const sampleQuestions = [
   {
     id: "Q1",
-    title: "Describe current housing damage",
-    type: "textarea",
+    title: "Describe el dano actual de la vivienda",
+    type: "area de texto",
     required: true,
   },
   {
     id: "Q2",
-    title: "How many people are in your household?",
-    type: "select",
+    title: "Cuantas personas hay en tu hogar?",
+    type: "seleccion",
     required: true,
   },
   {
     id: "Q3",
-    title: "Do you currently have safe sleeping space?",
-    type: "radio",
+    title: "Actualmente tienes un espacio seguro para dormir?",
+    type: "opcion unica",
     required: true,
   },
 ];
@@ -25,14 +25,14 @@ const sampleQuestions = [
 export default function AdminFormBuilderPage() {
   return (
     <SectionShell
-      title="Form Builder"
-      subtitle="Question management scaffold for DB-driven public assessments."
+      title="Constructor de formulario"
+      subtitle="Estructura de gestion de preguntas para evaluaciones publicas conectadas a la base de datos."
     >
       <section className="panel space-y-4 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <StatusPill tone="blue">Active Form: Housing Relief 2026</StatusPill>
+          <StatusPill tone="blue">Formulario activo: Housing Relief 2026</StatusPill>
           <button type="button" className="btn-secondary px-4 py-2 text-sm">
-            Add Question
+            Agregar pregunta
           </button>
         </div>
         {sampleQuestions.map((question, index) => (
@@ -41,13 +41,13 @@ export default function AdminFormBuilderPage() {
             className="rounded-xl border border-line bg-bg-elev/70 px-4 py-3"
           >
             <p className="text-xs uppercase tracking-[0.08em] text-ink-soft">
-              {question.id} • Position {index + 1}
+              {question.id} • Posicion {index + 1}
             </p>
             <p className="mt-1 text-sm font-semibold text-ink">
               {question.title}
             </p>
             <p className="mt-1 text-xs text-ink-soft">
-              {question.type} • {question.required ? "required" : "optional"}
+              {question.type} • {question.required ? "requerido" : "opcional"}
             </p>
           </article>
         ))}
