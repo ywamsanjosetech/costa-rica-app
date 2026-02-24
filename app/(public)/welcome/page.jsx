@@ -102,7 +102,20 @@ export default function WelcomePage() {
               className="group relative flex-1 overflow-hidden rounded-2xl border border-white/55 bg-white/16 px-7 py-4 text-center text-xl font-semibold tracking-[0.06em] text-white backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:border-white/80 hover:bg-white/24 hover:shadow-[0_18px_36px_-14px_rgba(255,255,255,0.75)] active:scale-[0.98]"
             >
               <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/18 to-transparent transition-transform duration-500 ease-out group-hover:translate-x-full" />
-              <span className="relative z-10">ADMIN</span>
+              <span className="relative z-10 inline-flex items-center justify-center gap-2">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  className="h-5 w-5"
+                  aria-hidden
+                >
+                  <rect x="5" y="11" width="14" height="10" rx="2" />
+                  <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+                </svg>
+                ADMIN
+              </span>
             </button>
             <Link
               href="/apply/housing-relief-2026"

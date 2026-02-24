@@ -1,11 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   DEFAULT_FORM_SLUG,
   encodeQuestionMeta,
   getOrCreateFormBySlug,
   normalizeOptionList,
+  parseQuestionMeta,
   seedTemplateQuestionsIfEmpty,
   toSlugKey,
 } from "@/lib/forms/dynamic-form";
@@ -143,6 +145,57 @@ export async function createQuestionAction(formData) {
   }
 
   revalidateFormPaths(form.slug);
+}
+
+export async function renameSectionAction(formData) {
+  const sectionKey = toCleanString(formData.get("section_key")) || "general";
+  const sectionTitle = toCleanString(formData.get("section_title"));
+  if (!sectionTitle) return;
+
+  const { supabase, form } = await getFormContext();
+  const nextSectionKey = toSlugKey(sectionTitle, "general");
+
+  const { data: questions, error: questionsError } = await supabase
+    .from("assessment_questions")
+    .select("id, help_text")
+    .eq("form_id", form.id)
+    .eq("is_active", true)
+    .order("order_index", { ascending: true });
+
+  if (questionsError) throw questionsError;
+  if (!questions?.length) return;
+
+  const updates = questions
+    .map((question) => {
+      const meta = parseQuestionMeta(question.help_text);
+      if ((meta.sectionKey || "general") !== sectionKey) return null;
+
+      return {
+        id: question.id,
+        helpText: encodeQuestionMeta({
+          ...meta,
+          sectionKey: nextSectionKey,
+          sectionTitle,
+        }),
+      };
+    })
+    .filter(Boolean);
+
+  for (const update of updates) {
+    const { error: updateError } = await supabase
+      .from("assessment_questions")
+      .update({
+        help_text: update.helpText,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", update.id)
+      .eq("form_id", form.id);
+
+    if (updateError) throw updateError;
+  }
+
+  revalidateFormPaths(form.slug);
+  redirect("/admin/form-builder?notice=section-updated");
 }
 
 export async function updateQuestionAction(formData) {

@@ -128,9 +128,9 @@ export default function AdminShell({ children }) {
         type="button"
         onClick={() => setIsMobileOpen(true)}
         aria-label="Abrir menu"
-        className="fixed left-3 top-3 z-40 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-line/85 bg-bg-base/70 text-ink md:hidden"
+        className="fixed left-3 top-3 z-40 inline-flex h-14 w-14 items-center justify-center rounded-xl border border-line/85 bg-bg-base/70 text-ink md:hidden"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6" aria-hidden>
           <path d="M4 7h16M4 12h16M4 17h16" />
         </svg>
       </button>
@@ -184,7 +184,7 @@ export default function AdminShell({ children }) {
         </div>
       </div>
 
-      <div className="px-4 pb-6 pt-16 transition-[margin] duration-300 md:ml-[var(--admin-sidebar-width)] md:px-6 md:py-8">
+      <div className="px-4 pb-6 pt-24 transition-[margin] duration-300 md:ml-[var(--admin-sidebar-width)] md:px-6 md:py-8">
         <div className="mx-auto w-full max-w-7xl space-y-5">
           <header className="panel flex flex-wrap items-center justify-between gap-4 border border-line/70 p-4 md:p-5">
             <div>

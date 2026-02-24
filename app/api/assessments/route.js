@@ -9,6 +9,12 @@ import { getSupabaseServiceClient } from "@/lib/supabase/server";
 
 const UPLOADS_BUCKET = "assessment-uploads";
 
+function shouldReturnHtmlRedirect(request, incoming) {
+  if (incoming.isJson) return false;
+  const accept = request.headers.get("accept") || "";
+  return accept.includes("text/html");
+}
+
 function toCleanString(value) {
   return String(value ?? "").trim();
 }
@@ -207,6 +213,7 @@ export async function POST(request) {
   const forwardedFor = request.headers.get("x-forwarded-for") || "";
   const clientIp = forwardedFor.split(",")[0]?.trim() || "unknown";
   const incoming = await parseIncomingData(request);
+  const wantsHtmlRedirect = shouldReturnHtmlRedirect(request, incoming);
 
   const formSlug = toCleanString(incoming.get("form_slug"));
   const startedAt = incoming.get("started_at");
@@ -343,6 +350,12 @@ export async function POST(request) {
 
     if (historyError) {
       console.warn("Assessment status history insert warning:", historyError);
+    }
+
+    if (wantsHtmlRedirect) {
+      const redirectUrl = new URL(`/apply/${encodeURIComponent(form.slug)}`, request.url);
+      redirectUrl.searchParams.set("submitted", "1");
+      return NextResponse.redirect(redirectUrl, { status: 303 });
     }
 
     return NextResponse.json(

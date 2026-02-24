@@ -6,6 +6,7 @@ export default function AdminExportPage() {
     <SectionShell
       title="Exportar"
       subtitle="Generar exportaciones de datos para reportes y coordinacion."
+      headerClassName="panel-strong-mint"
     >
       <section className="panel space-y-4 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

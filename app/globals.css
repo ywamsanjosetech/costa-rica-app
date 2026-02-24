@@ -113,6 +113,15 @@ a {
     0 32px 64px -40px rgba(2, 8, 20, 0.98);
 }
 
+.panel-strong-mint {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(178, 242, 236, 0.34), transparent 42%),
+    radial-gradient(circle at 92% 14%, rgba(174, 233, 255, 0.28), transparent 45%),
+    radial-gradient(circle at 52% 100%, rgba(222, 250, 246, 0.18), transparent 48%),
+    linear-gradient(164deg, rgba(30, 58, 84, 0.8), rgba(17, 39, 61, 0.84), rgba(13, 29, 48, 0.9));
+  border-color: rgba(174, 233, 255, 0.4);
+}
+
 .text-gradient {
   background: linear-gradient(90deg, #79c9ff 0%, #b8f6f2 54%, #f2f8ff 100%);
   -webkit-background-clip: text;
