@@ -1,132 +1,271 @@
 import { NextResponse } from "next/server";
+import {
+  fetchFormQuestions,
+  getOrCreateFormBySlug,
+  seedTemplateQuestionsIfEmpty,
+} from "@/lib/forms/dynamic-form";
 import { isLikelySpam, isRateLimited } from "@/lib/security/spam-guard";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
-import { validateAssessmentPayload } from "@/lib/validation/assessment";
 
-function normalizePayload(contentType, data) {
-  if (contentType.includes("application/json")) return data;
+const UPLOADS_BUCKET = "assessment-uploads";
 
-  return {
-    form_slug: data.get("form_slug"),
-    started_at: data.get("started_at"),
-    company: data.get("company"),
-    full_name: data.get("full_name"),
-    phone: data.get("phone"),
-    living_situation: data.get("living_situation"),
-    household_size: data.get("household_size"),
-  };
+function toCleanString(value) {
+  return String(value ?? "").trim();
 }
 
-function toHouseholdSizeInt(value) {
-  const normalized = String(value || "").trim();
-  if (!normalized) return null;
+function toSafeFileName(name) {
+  return String(name || "archivo")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "_")
+    .replace(/_+/g, "_")
+    .slice(0, 80);
+}
 
-  if (/^\d+$/.test(normalized)) {
-    return Number(normalized);
+function toNullableInt(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return Math.max(0, Math.round(parsed));
+}
+
+async function parseIncomingData(request) {
+  const contentType = request.headers.get("content-type") || "";
+  const isJson = contentType.includes("application/json");
+
+  if (isJson) {
+    const data = await request.json();
+    return {
+      contentType,
+      isJson,
+      data,
+      get(name) {
+        return data?.[name];
+      },
+    };
   }
 
-  const rangeMap = {
-    "2-3": 3,
-    "4-6": 6,
-    "7+": 7,
+  const data = await request.formData();
+  return {
+    contentType,
+    isJson,
+    data,
+    get(name) {
+      return data.get(name);
+    },
   };
-
-  return rangeMap[normalized] ?? null;
 }
 
-function titleFromSlug(slug) {
-  return String(slug || "")
-    .split("-")
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(" ");
+async function ensureUploadsBucket(supabase) {
+  const { error } = await supabase.storage.createBucket(UPLOADS_BUCKET, {
+    public: false,
+    fileSizeLimit: 10 * 1024 * 1024,
+    allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/heic"],
+  });
+
+  if (error && !/already exists/i.test(error.message || "")) {
+    throw error;
+  }
 }
 
-async function getOrCreateFormId(supabase, slug) {
-  const { data: existingForm, error: findError } = await supabase
-    .from("assessment_forms")
-    .select("id")
-    .eq("slug", slug)
-    .maybeSingle();
+async function buildAnswerRows({
+  incoming,
+  questions,
+  assessmentId,
+  supabase,
+  formSlug,
+}) {
+  const errors = {};
+  const prepared = [];
+  const answerLookup = new Map();
 
-  if (findError) throw findError;
-  if (existingForm?.id) return existingForm.id;
+  for (const question of questions) {
+    const fieldName = `q__${question.key}`;
+    const rawEntry = incoming.get(fieldName);
+    const inputType = question.inputType;
+    const isRequired = question.isRequired;
 
-  const { data: createdForm, error: createError } = await supabase
-    .from("assessment_forms")
-    .insert({
-      slug,
-      title: titleFromSlug(slug),
-      description: "Auto-created from public intake route.",
-      is_active: true,
-    })
-    .select("id")
-    .single();
+    let answerText = null;
+    let answerNumber = null;
+    let optionId = null;
+    let fileEntry = null;
 
-  if (createError) throw createError;
-  return createdForm.id;
+    if (inputType === "file") {
+      const fileCandidate = rawEntry instanceof File ? rawEntry : null;
+      if (fileCandidate && fileCandidate.size > 0) {
+        fileEntry = fileCandidate;
+      }
+
+      if (isRequired && !fileEntry) {
+        errors[question.key] = "Archivo requerido.";
+      }
+    } else {
+      const value = toCleanString(rawEntry);
+
+      if (isRequired && !value) {
+        errors[question.key] = "Campo requerido.";
+        continue;
+      }
+
+      if (inputType === "number") {
+        if (value) {
+          const numericValue = Number(value);
+          if (!Number.isFinite(numericValue)) {
+            errors[question.key] = "Debe ser un numero valido.";
+            continue;
+          }
+          answerNumber = numericValue;
+          answerText = value;
+        }
+      } else if (inputType === "radio" || inputType === "select") {
+        if (value) {
+          const optionMatch = question.options.find((option) => option.value === value);
+          if (!optionMatch) {
+            errors[question.key] = "Seleccione una opcion valida.";
+            continue;
+          }
+          optionId = optionMatch.id;
+          answerText = value;
+        }
+      } else if (value) {
+        answerText = value;
+      }
+    }
+
+    answerLookup.set(question.key, {
+      text: answerText,
+      number: answerNumber,
+      hasFile: Boolean(fileEntry),
+    });
+
+    prepared.push({
+      question,
+      optionId,
+      answerText,
+      answerNumber,
+      fileEntry,
+    });
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return { errors, rows: [], answerLookup };
+  }
+
+  const hasUploads = prepared.some((item) => item.fileEntry);
+  if (hasUploads) {
+    await ensureUploadsBucket(supabase);
+  }
+
+  const rows = [];
+  for (const item of prepared) {
+    let finalText = item.answerText;
+
+    if (item.fileEntry) {
+      const file = item.fileEntry;
+      const fileName = toSafeFileName(file.name);
+      const uploadPath = `${formSlug}/${assessmentId}/${item.question.key}-${Date.now()}-${fileName}`;
+      const fileBytes = new Uint8Array(await file.arrayBuffer());
+
+      const { error: uploadError } = await supabase.storage
+        .from(UPLOADS_BUCKET)
+        .upload(uploadPath, fileBytes, {
+          contentType: file.type || "application/octet-stream",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      finalText = `storage://${UPLOADS_BUCKET}/${uploadPath}`;
+      answerLookup.set(item.question.key, {
+        text: finalText,
+        number: null,
+        hasFile: true,
+      });
+    }
+
+    const hasValue =
+      Boolean(item.optionId) ||
+      finalText !== null ||
+      item.answerNumber !== null;
+    if (!hasValue) continue;
+
+    rows.push({
+      assessment_id: assessmentId,
+      question_id: item.question.id,
+      option_id: item.optionId,
+      answer_text: finalText,
+      answer_number: item.answerNumber,
+      answer_boolean: null,
+    });
+  }
+
+  return { errors: {}, rows, answerLookup };
 }
 
 export async function POST(request) {
-  const contentType = request.headers.get("content-type") || "";
   const forwardedFor = request.headers.get("x-forwarded-for") || "";
   const clientIp = forwardedFor.split(",")[0]?.trim() || "unknown";
+  const incoming = await parseIncomingData(request);
 
-  let data;
-  if (contentType.includes("application/json")) {
-    data = await request.json();
-  } else {
-    data = await request.formData();
-  }
+  const formSlug = toCleanString(incoming.get("form_slug"));
+  const startedAt = incoming.get("started_at");
+  const honeypot = incoming.get("company");
 
-  const payload = normalizePayload(contentType, data);
-
-  if (
-    isLikelySpam({
-      honeypotValue: payload.company,
-      startedAt: payload.started_at,
-    })
-  ) {
+  if (isLikelySpam({ honeypotValue: honeypot, startedAt })) {
     return NextResponse.json(
-      { ok: false, message: "Submission blocked." },
+      { ok: false, message: "Envio bloqueado por proteccion anti-spam." },
       { status: 400 },
     );
   }
 
   if (isRateLimited({ key: clientIp })) {
     return NextResponse.json(
-      { ok: false, message: "Too many requests. Try again soon." },
+      { ok: false, message: "Demasiados intentos. Intente nuevamente pronto." },
       { status: 429 },
     );
   }
 
-  const { isValid, errors, clean } = validateAssessmentPayload(payload);
-  if (!isValid) {
-    return NextResponse.json({ ok: false, errors }, { status: 422 });
+  if (!formSlug) {
+    return NextResponse.json(
+      { ok: false, errors: { form_slug: "Formulario invalido." } },
+      { status: 422 },
+    );
   }
+
+  let createdApplicantId = null;
+  let createdAssessmentId = null;
 
   try {
     const supabase = getSupabaseServiceClient();
-    const formId = await getOrCreateFormId(supabase, clean.formSlug);
+    const form = await getOrCreateFormBySlug(supabase, formSlug);
+    await seedTemplateQuestionsIfEmpty(supabase, form.id);
+    const questions = await fetchFormQuestions(supabase, form.id);
 
-    const householdSize = toHouseholdSizeInt(clean.householdSize);
+    if (!questions.length) {
+      return NextResponse.json(
+        { ok: false, message: "No hay preguntas activas en este formulario." },
+        { status: 422 },
+      );
+    }
 
     const { data: applicant, error: applicantError } = await supabase
       .from("applicants")
       .insert({
-        full_name: clean.fullName,
-        phone: clean.phone,
-        household_size: householdSize,
+        full_name: "Pendiente",
+        phone: "Pendiente",
       })
-      .select("id, full_name, phone, household_size, created_at")
+      .select("id")
       .single();
 
     if (applicantError) throw applicantError;
+    createdApplicantId = applicant.id;
 
     const { data: assessment, error: assessmentError } = await supabase
       .from("assessments")
       .insert({
         applicant_id: applicant.id,
-        form_id: formId,
+        form_id: form.id,
         status: "submitted",
         submitted_at: new Date().toISOString(),
       })
@@ -134,8 +273,62 @@ export async function POST(request) {
       .single();
 
     if (assessmentError) throw assessmentError;
+    createdAssessmentId = assessment.id;
 
-    // Store intake context without changing schema.
+    const { errors, rows, answerLookup } = await buildAnswerRows({
+      incoming,
+      questions,
+      assessmentId: assessment.id,
+      supabase,
+      formSlug: form.slug,
+    });
+
+    if (Object.keys(errors).length > 0) {
+      await supabase.from("assessments").delete().eq("id", assessment.id);
+      await supabase.from("applicants").delete().eq("id", applicant.id);
+
+      return NextResponse.json({ ok: false, errors }, { status: 422 });
+    }
+
+    if (rows.length > 0) {
+      const { error: answersError } = await supabase
+        .from("assessment_answers")
+        .insert(rows);
+
+      if (answersError) throw answersError;
+    }
+
+    const fullName =
+      answerLookup.get("nombre_jefe_familia")?.text ||
+      answerLookup.get("nombre_firma")?.text ||
+      "Solicitante";
+    const phone = answerLookup.get("telefono_contacto")?.text || "No registrado";
+    const householdSize = toNullableInt(
+      answerLookup.get("numero_total_miembros")?.number ??
+        answerLookup.get("numero_total_miembros")?.text,
+    );
+    const currentLocation = [
+      answerLookup.get("provincia")?.text,
+      answerLookup.get("ciudad")?.text,
+      answerLookup.get("barrio_comunidad")?.text,
+      answerLookup.get("direccion_exacta")?.text,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    const { error: applicantUpdateError } = await supabase
+      .from("applicants")
+      .update({
+        full_name: fullName,
+        phone,
+        household_size: householdSize,
+        national_id: answerLookup.get("documento_identificacion")?.text || null,
+        current_location: currentLocation || null,
+      })
+      .eq("id", applicant.id);
+
+    if (applicantUpdateError) throw applicantUpdateError;
+
     const { error: historyError } = await supabase
       .from("assessment_status_history")
       .insert({
@@ -143,8 +336,8 @@ export async function POST(request) {
         from_status: null,
         to_status: "submitted",
         notes: JSON.stringify({
-          living_situation: clean.livingSituation,
-          household_size_input: clean.householdSize,
+          answers_count: rows.length,
+          form_slug: form.slug,
         }),
       });
 
@@ -155,11 +348,11 @@ export async function POST(request) {
     return NextResponse.json(
       {
         ok: true,
-        message: "Assessment received.",
+        message: "Formulario recibido correctamente.",
         data: {
           assessment_id: assessment.id,
           applicant_id: applicant.id,
-          form_slug: clean.formSlug,
+          form_slug: form.slug,
           status: assessment.status,
           submitted_at: assessment.submitted_at,
         },
@@ -167,9 +360,23 @@ export async function POST(request) {
       { status: 201 },
     );
   } catch (error) {
+    try {
+      if (createdAssessmentId || createdApplicantId) {
+        const cleanupClient = getSupabaseServiceClient();
+        if (createdAssessmentId) {
+          await cleanupClient.from("assessments").delete().eq("id", createdAssessmentId);
+        }
+        if (createdApplicantId) {
+          await cleanupClient.from("applicants").delete().eq("id", createdApplicantId);
+        }
+      }
+    } catch (cleanupError) {
+      console.error("Assessment cleanup failed:", cleanupError);
+    }
+
     console.error("Assessment persistence failed:", error);
     return NextResponse.json(
-      { ok: false, message: "Unable to save assessment right now." },
+      { ok: false, message: "No fue posible guardar el formulario en este momento." },
       { status: 500 },
     );
   }
