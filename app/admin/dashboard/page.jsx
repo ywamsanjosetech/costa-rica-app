@@ -5,7 +5,7 @@ import StatusPill from "@/components/ui/status-pill";
 
 const metrics = [
   { label: "Nuevas solicitudes (24h)", value: "14", trend: "+18%", tone: "blue" },
-  { label: "Pendientes de revision", value: "32", trend: "en cola", tone: "pink" },
+  { label: "Pendientes de revision", value: "32", trend: "en espera", tone: "pink" },
   {
     label: "Aprobadas para vivienda",
     value: "9",
