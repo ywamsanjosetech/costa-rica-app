@@ -67,10 +67,12 @@ async function buildUniqueQuestionKey({ supabase, formId, label }) {
 
 function buildQuestionMeta(formData) {
   const sectionTitle = toCleanString(formData.get("section_title")) || "General";
+  const sectionKeyInput = toCleanString(formData.get("section_key"));
+  const sectionKey = sectionKeyInput || toSlugKey(sectionTitle, "general");
   const placeholder = toCleanString(formData.get("placeholder"));
   return {
     sectionTitle,
-    sectionKey: toSlugKey(sectionTitle, "general"),
+    sectionKey,
     placeholder,
   };
 }
@@ -145,6 +147,9 @@ export async function createQuestionAction(formData) {
   }
 
   revalidateFormPaths(form.slug);
+  const redirectParams = new URLSearchParams({ notice: "question-created" });
+  redirectParams.set("created_item", label);
+  redirect(`/admin/form-builder?${redirectParams.toString()}`);
 }
 
 export async function renameSectionAction(formData) {
@@ -153,7 +158,6 @@ export async function renameSectionAction(formData) {
   if (!sectionTitle) return;
 
   const { supabase, form } = await getFormContext();
-  const nextSectionKey = toSlugKey(sectionTitle, "general");
 
   const { data: questions, error: questionsError } = await supabase
     .from("assessment_questions")
@@ -174,7 +178,7 @@ export async function renameSectionAction(formData) {
         id: question.id,
         helpText: encodeQuestionMeta({
           ...meta,
-          sectionKey: nextSectionKey,
+          sectionKey: meta.sectionKey || sectionKey,
           sectionTitle,
         }),
       };
@@ -249,8 +253,65 @@ export async function updateQuestionAction(formData) {
   revalidateFormPaths(form.slug);
 }
 
+export async function reorderSectionQuestionsAction(formData) {
+  const sectionKey = toCleanString(formData.get("section_key")) || "general";
+  const orderedIdsRaw = toCleanString(formData.get("ordered_ids"));
+  const orderedIds = orderedIdsRaw
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+
+  if (!orderedIds.length) return;
+
+  const { supabase, form } = await getFormContext();
+  const { data: questions, error: questionsError } = await supabase
+    .from("assessment_questions")
+    .select("id, order_index, help_text")
+    .eq("form_id", form.id)
+    .eq("is_active", true)
+    .order("order_index", { ascending: true });
+
+  if (questionsError) throw questionsError;
+  if (!questions?.length) return;
+
+  const sectionQuestions = questions.filter((question) => {
+    const meta = parseQuestionMeta(question.help_text);
+    return (meta.sectionKey || "general") === sectionKey;
+  });
+
+  if (!sectionQuestions.length) return;
+  if (sectionQuestions.length !== orderedIds.length) return;
+
+  const sectionQuestionIds = new Set(sectionQuestions.map((question) => question.id));
+  const hasUnknownId = orderedIds.some((id) => !sectionQuestionIds.has(id));
+  if (hasUnknownId) return;
+
+  const availableOrderSlots = [...sectionQuestions]
+    .map((question) => question.order_index)
+    .sort((a, b) => a - b);
+
+  for (let index = 0; index < orderedIds.length; index += 1) {
+    const questionId = orderedIds[index];
+    const orderIndex = availableOrderSlots[index];
+
+    const { error: updateError } = await supabase
+      .from("assessment_questions")
+      .update({
+        order_index: orderIndex,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", questionId)
+      .eq("form_id", form.id);
+
+    if (updateError) throw updateError;
+  }
+
+  revalidateFormPaths(form.slug);
+}
+
 export async function deleteQuestionAction(formData) {
   const questionId = toCleanString(formData.get("question_id"));
+  const deletedLabel = toCleanString(formData.get("label"));
   if (!questionId) return;
 
   const { supabase, form } = await getFormContext();
@@ -280,4 +341,9 @@ export async function deleteQuestionAction(formData) {
   }
 
   revalidateFormPaths(form.slug);
+  const redirectParams = new URLSearchParams({ notice: "question-deleted" });
+  if (deletedLabel) {
+    redirectParams.set("deleted_item", deletedLabel);
+  }
+  redirect(`/admin/form-builder?${redirectParams.toString()}`);
 }

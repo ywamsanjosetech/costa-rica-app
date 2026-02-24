@@ -122,6 +122,91 @@ a {
   border-color: rgba(174, 233, 255, 0.4);
 }
 
+.form-builder-section-panel {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(121, 201, 255, 0.04), transparent 44%),
+    linear-gradient(162deg, rgba(7, 18, 34, 0.98), rgba(4, 13, 27, 0.98));
+  transition: background 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.form-builder-section-panel:not([open]):hover {
+  border-color: rgba(168, 222, 255, 0.48);
+  box-shadow:
+    inset 0 1px 0 rgba(202, 237, 255, 0.14),
+    0 0 34px -22px rgba(156, 219, 255, 0.72);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(128, 206, 255, 0.11), transparent 46%),
+    linear-gradient(162deg, rgba(10, 23, 41, 0.98), rgba(6, 16, 30, 0.98));
+}
+
+.form-builder-section-panel[open] {
+  border-color: rgba(171, 224, 255, 0.56);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(141, 214, 255, 0.28), transparent 48%),
+    radial-gradient(circle at 95% 18%, rgba(169, 227, 255, 0.2), transparent 48%),
+    linear-gradient(162deg, rgba(23, 47, 71, 0.92), rgba(14, 33, 56, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(218, 241, 255, 0.22),
+    0 26px 58px -42px rgba(6, 20, 34, 0.9);
+}
+
+.form-builder-section-panel > summary {
+  border-radius: calc(1rem - 1px);
+  transition: background-color 220ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.form-builder-section-summary:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(169, 227, 255, 0.3),
+    0 0 26px -18px rgba(169, 227, 255, 0.72);
+  background: linear-gradient(90deg, rgba(129, 202, 255, 0.08), rgba(163, 240, 239, 0.06));
+}
+
+.form-builder-section-panel[open] > summary {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  background: linear-gradient(90deg, rgba(183, 244, 231, 0.12), rgba(173, 232, 255, 0.08));
+}
+
+.form-builder-subpanel {
+  background:
+    radial-gradient(circle at 92% -10%, rgba(163, 240, 239, 0.16), transparent 48%),
+    linear-gradient(156deg, rgba(17, 35, 56, 0.82), rgba(10, 25, 42, 0.84));
+}
+
+.form-builder-question-row {
+  background:
+    radial-gradient(circle at 0% 100%, rgba(163, 240, 239, 0.1), transparent 42%),
+    linear-gradient(154deg, rgba(14, 31, 53, 0.76), rgba(9, 23, 40, 0.78));
+}
+
+.form-builder-question-collapsible {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(121, 201, 255, 0.08), transparent 42%),
+    linear-gradient(154deg, rgba(11, 27, 47, 0.9), rgba(8, 21, 38, 0.9));
+}
+
+.form-builder-question-summary {
+  border-radius: calc(0.75rem - 1px);
+  transition: box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.form-builder-question-summary:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(169, 227, 255, 0.42),
+    0 0 28px -16px rgba(169, 227, 255, 0.82);
+  background: linear-gradient(90deg, rgba(129, 202, 255, 0.08), rgba(163, 240, 239, 0.06));
+}
+
+.form-builder-question-collapsible[open] > .form-builder-question-summary {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  box-shadow: inset 0 -1px 0 rgba(169, 227, 255, 0.22);
+  background: linear-gradient(90deg, rgba(129, 202, 255, 0.09), rgba(163, 240, 239, 0.07));
+}
+
 .text-gradient {
   background: linear-gradient(90deg, #79c9ff 0%, #b8f6f2 54%, #f2f8ff 100%);
   -webkit-background-clip: text;
@@ -198,6 +283,38 @@ a {
   border-color: var(--line-strong);
   background: rgba(25, 45, 78, 0.86);
   transform: translateY(-1px);
+}
+
+.btn-danger {
+  border: 1px solid rgba(255, 165, 165, 0.56);
+  border-radius: 0.85rem;
+  background: linear-gradient(132deg, #ff8d8d 6%, #ff7b7b 58%, #ffadad 100%);
+  color: #23070b;
+  font-weight: 700;
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 238, 238, 0.4),
+    0 16px 30px -20px rgba(255, 123, 123, 0.66);
+}
+
+.btn-danger:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.btn-danger-ghost {
+  border: 1px solid rgba(255, 147, 147, 0.46);
+  border-radius: 0.85rem;
+  background: linear-gradient(156deg, rgba(79, 24, 32, 0.64), rgba(41, 13, 18, 0.7));
+  color: #ffd4d4;
+  font-weight: 700;
+  transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+.btn-danger-ghost:hover {
+  border-color: rgba(255, 171, 171, 0.66);
+  background: linear-gradient(156deg, rgba(94, 30, 39, 0.72), rgba(53, 18, 24, 0.78));
+  color: #ffe8e8;
 }
 
 .input-lux {
