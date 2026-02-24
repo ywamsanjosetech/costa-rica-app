@@ -62,14 +62,20 @@ function renderInput(question) {
 
   if (question.inputType === "file") {
     return (
-      <input
-        id={inputName}
-        type="file"
-        name={inputName}
-        required={required}
-        accept="image/*"
-        className={baseInputClass}
-      />
+      <div className="space-y-2">
+        <input
+          id={inputName}
+          type="file"
+          name={inputName}
+          required={required}
+          accept="image/*"
+          capture="environment"
+          className={baseInputClass}
+        />
+        <p className="text-xs text-ink-soft">
+          En celular puede tomar una foto con la camara o seleccionar una imagen.
+        </p>
+      </div>
     );
   }
 
