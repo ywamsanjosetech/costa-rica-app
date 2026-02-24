@@ -103,7 +103,13 @@ export default async function PublicAssessmentFormPage({ params }) {
   const sections = groupQuestionsBySection(questions);
 
   return (
-    <main className="space-y-6 animate-rise">
+    <main className="relative space-y-6 overflow-hidden rounded-3xl border border-line/60 bg-[linear-gradient(165deg,rgba(30,56,102,0.52),rgba(20,40,78,0.46))] p-4 md:p-6 animate-rise">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-blue/25 blur-3xl" />
+        <div className="absolute right-[-120px] top-20 h-80 w-80 rounded-full bg-teal/20 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-blue/16 blur-3xl" />
+      </div>
+
       <header className="panel-strong p-6 md:p-8">
         <p className="chip">Formulario publico</p>
         <h1 className="mt-4 text-3xl font-semibold md:text-4xl">
