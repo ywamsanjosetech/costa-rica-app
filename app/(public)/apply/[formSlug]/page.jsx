@@ -1,13 +1,13 @@
 import Link from "next/link";
 import {
-  fetchFormQuestions,
-  getOrCreateFormBySlug,
-  groupQuestionsBySection,
-  seedTemplateQuestionsIfEmpty,
+  loadFormDefinition,
 } from "@/lib/forms/dynamic-form";
 import FormAccessGate from "@/components/public/form-access-gate";
 import FormStartedAtInput from "@/components/ui/form-started-at-input";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 function renderInput(question) {
   const inputName = `q__${question.key}`;
@@ -100,10 +100,7 @@ export default async function PublicAssessmentFormPage({ params, searchParams })
   const resolvedSearchParams = (await searchParams) || {};
   const submissionSucceeded = resolvedSearchParams.submitted === "1";
   const supabase = getSupabaseServiceClient();
-  const form = await getOrCreateFormBySlug(supabase, formSlug);
-  await seedTemplateQuestionsIfEmpty(supabase, form.id);
-  const questions = await fetchFormQuestions(supabase, form.id);
-  const sections = groupQuestionsBySection(questions);
+  const { form, sections } = await loadFormDefinition(supabase, formSlug);
 
   return (
     <main className="relative space-y-6 overflow-hidden rounded-3xl border border-line/60 bg-[linear-gradient(165deg,rgba(30,56,102,0.52),rgba(20,40,78,0.46))] p-4 md:p-6 animate-rise">

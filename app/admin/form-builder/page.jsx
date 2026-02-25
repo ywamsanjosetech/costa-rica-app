@@ -3,10 +3,7 @@ import QuestionAccordionList from "@/components/admin/question-accordion-list";
 import SectionShell from "@/components/admin/section-shell";
 import {
   DEFAULT_FORM_SLUG,
-  fetchFormQuestions,
-  getOrCreateFormBySlug,
-  groupQuestionsBySection,
-  seedTemplateQuestionsIfEmpty,
+  loadFormDefinition,
 } from "@/lib/forms/dynamic-form";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
 import {
@@ -29,13 +26,13 @@ const INPUT_TYPE_OPTIONS = [
 
 async function loadFormBuilderData() {
   const supabase = getSupabaseServiceClient();
-  const form = await getOrCreateFormBySlug(supabase, DEFAULT_FORM_SLUG);
-  await seedTemplateQuestionsIfEmpty(supabase, form.id);
-  const questions = await fetchFormQuestions(supabase, form.id);
-  const sections = groupQuestionsBySection(questions);
+  const { form, sections } = await loadFormDefinition(supabase, DEFAULT_FORM_SLUG);
 
   return { form, sections };
 }
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function AdminFormBuilderPage({ searchParams }) {
   const { form, sections } = await loadFormBuilderData();
